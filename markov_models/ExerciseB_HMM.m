@@ -53,9 +53,13 @@ legend('Data y','Model x');
 %%
 clc
 close all
-sigmas = [0.3:0.1:0.6];
-%ps = [0.1:0.05:0.95];
-ps = [0.85:0.01:0.95];
+% Local
+%sigmas = [0.3:0.005:0.6];
+%ps = [0.85:0.005:0.93];
+% Global
+sigmas = [0:0.01:1];
+ps = [0.01:0.01:0.99];
+
 Z = zeros(length(ps),length(sigmas));
 it_p = 1;
 max = 0;
@@ -78,10 +82,13 @@ p_ml = ml_p
 
 figure
 [X,Y] = meshgrid(sigmas,ps);
-mesh(X,Y,Z)
+C = log(Z);
+mesh(X,Y,Z,C,'FaceAlpha',0.5,'FaceColor','interp')
 set(gca,'ZScale','log')
-xlabel("sigma")
-ylabel("p")
+%set(gca,'ColorScale','log')
+xlabel("$\tau$",'interpreter', 'latex', 'FontSize', 15)
+ylabel("$p$",'interpreter', 'latex', 'FontSize', 15)
+zlabel("$p_{\theta}(\mathbf{y})$",'interpreter', 'latex', 'FontSize', 15)
 
 
 

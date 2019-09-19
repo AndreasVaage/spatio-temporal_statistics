@@ -57,11 +57,11 @@ legend('States $\mathbf x$', 'Data $\mathbf y$', 'interpreter', 'latex');
 clc
 close all
 % Local
-taus = [0.3:0.005:0.5];
-ps = [0.85:0.001:0.999];
+%taus = [0.3:0.005:0.5];
+%ps = [0.85:0.001:0.999];
 % Global
-%taus = [0.15:0.01:2];
-%ps = [0.2:0.01:0.999];
+taus = [0.15:0.01:2];
+ps = [0.2:0.01:0.999];
 
 Z = zeros(length(ps),length(taus));
 
@@ -93,7 +93,13 @@ figure
 mesh(X,Y,Z,'FaceAlpha',0.5,'FaceColor','interp')
 xlabel("$\tau$",'interpreter', 'latex', 'FontSize', 15)
 ylabel("$p$",'interpreter', 'latex', 'FontSize', 15)
-zlabel("$p_{\theta}(\mathbf{y})$",'interpreter', 'latex', 'FontSize', 15)
+zlabel("$\mathrm{log} \,\, p_{\theta}(\mathbf{y})$",'interpreter', 'latex', 'FontSize', 15)
 
+%%
+%C - Backward Recursion
+clc
+[~,prio_xY,post_xY] = forward_reqursion(0.9,0.4,y,N);
+margp_xY = backward_recursion(0.9,prio_xY,post_xY,N);
 
+disp("p(x_1 = 1 | Y) = "+ num2str(margp_xY(2,1)));
 

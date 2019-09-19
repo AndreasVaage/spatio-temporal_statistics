@@ -1,4 +1,4 @@
-function marginal_log_likelihood_N = forward_reqursion(p,tau,y,N)
+function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_reqursion(p,tau,y,N)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -44,13 +44,10 @@ for i = 1:N
 % Filtering
         
     p_yY(i) = prio_xY(:,i)'*like_yx(:,i); % Matrix multiply to get sum for all x
-    
     post_xY(:,i) = prio_xY(:,i) .* like_yx(:,i) ./ p_yY(i);
-    
 %    post_mean(:,i) = prio_xY(:,i) .* like_mean ./ p_yY(i);
 %    post_std(:,i)  = prio_xY(:,i) .* like_std ./ p_yY(i);
 
-% Marginalise
     if (i == 1)
         p_Y_log(i) = log(p_yY(i));
     else

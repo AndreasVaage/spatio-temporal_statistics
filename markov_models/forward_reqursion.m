@@ -45,7 +45,7 @@ for i = 1:N
     if (i == 1)
         p_Y_log(i) = log(p_yY(i));
     else
-        p_Y_log(i) = log(p_yY(i)) + log(p_Y_log(i-1));
+        p_Y_log(i) = log(p_yY(i)) + p_Y_log(i-1);
     end
 end
 marginal_log_likelihood_N = p_Y_log(N);

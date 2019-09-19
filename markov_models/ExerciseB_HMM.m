@@ -27,13 +27,29 @@ end
 
 y = x + s;
 
-%%
-figure; plot(y); grid on;
-hold on; plot(x);
-title('\textbf{Binary Hidden Markov Chain Simulation}', 'interpreter', 'latex', 'FontSize', 18);
+%% Subplot plot
+figure;
+subplot(2,1,1);
+plot(y); grid on;
+ylabel('Data $y_i$', 'interpreter', 'latex', 'FontSize', 15);
 xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
-ylabel('Data $\mathbf y$', 'interpreter', 'latex', 'FontSize', 15);
-legend('Data y','Model x');
+title('\textbf{Measurements $\mathbf y$}', 'interpreter', 'latex', 'FontSize', 15);
+
+subplot(2,1,2);
+stairs(x); grid on;
+ylabel('States $x_i$', 'interpreter', 'latex', 'FontSize', 15);
+xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
+title('\textbf{Hidden States $\mathbf x$}', 'interpreter', 'latex', 'FontSize', 15);
+axis([0 250 -0.5 1.5]);
+
+%% Single graph plot
+figure;
+stairs(x); grid on; hold on;
+plot(y);
+ylabel('Data $y_i$, States $x_i$', 'interpreter', 'latex', 'FontSize', 15);
+xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
+title('\textbf{Hidden Markov Model Simulation}', 'interpreter', 'latex', 'FontSize', 15);
+legend('States $\mathbf x$', 'Data $\mathbf y$', 'interpreter', 'latex');
 
 %% B)
 %Init
@@ -54,16 +70,19 @@ legend('Data y','Model x');
 clc
 close all
 % Local
-%sigmas = [0.3:0.005:0.6];
-%ps = [0.85:0.005:0.93];
+sigmas = [0.3:0.005:0.6];
+ps = [0.85:0.005:0.93];
 % Global
-sigmas = [0:0.01:1];
-ps = [0.01:0.01:0.99];
+%sigmas = [0:0.01:1];
+%ps = [0.01:0.01:0.99];
 
 Z = zeros(length(ps),length(sigmas));
 
 it_p = 1;
 max = 0;
+
+ml_p = 0;
+ml_sigma = 0;
 
 for p = ps
     

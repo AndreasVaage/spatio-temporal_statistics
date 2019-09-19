@@ -1,3 +1,10 @@
+# Latex 
+*.aux
+*.log
+*.gz
+
+# Matlab
+
 # Windows default autosave extension
 *.asv
 

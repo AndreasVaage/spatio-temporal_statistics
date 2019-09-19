@@ -57,12 +57,18 @@ sigmas = [0.3:0.1:0.6];
 %ps = [0.1:0.05:0.95];
 ps = [0.85:0.01:0.95];
 Z = zeros(length(ps),length(sigmas));
+
 it_p = 1;
 max = 0;
+
 for p = ps
+    
     it_sigma = 1;
+    
     for sigma = sigmas
+        
         Z(it_p,it_sigma) = forward_reqursion(p,sigma,y,N);
+        
         if (Z(it_p,it_sigma) >= max)
             max = Z(it_p,it_sigma);
             ml_p = p;
@@ -79,7 +85,7 @@ p_ml = ml_p
 figure
 [X,Y] = meshgrid(sigmas,ps);
 mesh(X,Y,Z)
-set(gca,'ZScale','log')
+%set(gca,'ZScale','log')
 xlabel("sigma")
 ylabel("p")
 

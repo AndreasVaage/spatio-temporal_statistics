@@ -6,28 +6,28 @@ N = 250;
 s = 0.4*randn(N,1);
 r = rand(N,1);
 
-x = ones(N,1)*-1;
+x_Markov = ones(N,1)*-1;
 y = ones(N,1)*-1;
 
 if r(1) < 0.5
-    x(1) = 1;
+    x_Markov(1) = 1;
 else
-    x(1) = 0;
+    x_Markov(1) = 0;
 end
 %y(1) = x(1) + s(1);
 
 
 for i = 2:N
     if r(i) < 0.9
-        x(i) = x(i-1);
+        x_Markov(i) = x_Markov(i-1);
     else
-        x(i) = 1 - x(i-1);
+        x_Markov(i) = 1 - x_Markov(i-1);
     end
     
     %y(i) = x(i) + s(i);
 end
 
-y = x + s;
+y = x_Markov + s;
 
 %% Subplot plot
 figure;
@@ -38,7 +38,7 @@ xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
 title('\textbf{Measurements $\mathbf y$}', 'interpreter', 'latex', 'FontSize', 15);
 
 subplot(2,1,2);
-stairs(x); grid on;
+stairs(x_Markov); grid on;
 ylabel('States $x_i$', 'interpreter', 'latex', 'FontSize', 15);
 xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
 title('\textbf{Hidden States $\mathbf x$}', 'interpreter', 'latex', 'FontSize', 15);
@@ -46,7 +46,7 @@ axis([0 250 -0.5 1.5]);
 
 %% Single graph plot
 figure;
-stairs(x); grid on; hold on;
+stairs(x_Markov); grid on; hold on;
 plot(y);
 ylabel('Data $y_i$, States $x_i$', 'interpreter', 'latex', 'FontSize', 15);
 xlabel('index $i$', 'interpreter', 'latex', 'FontSize', 15);
@@ -55,7 +55,6 @@ legend('States $\mathbf x$', 'Data $\mathbf y$', 'interpreter', 'latex');
 
 %% B)
 clc
-close all
 % Local
 %taus = [0.3:0.005:0.5];
 %ps = [0.85:0.001:0.999];
@@ -102,4 +101,34 @@ clc
 margp_xY = backward_recursion(0.9,prio_xY,post_xY,N);
 
 disp("p(x_1 = 1 | Y) = "+ num2str(margp_xY(2,1)));
+plot(margp_xY(2,:))
+
+%%
+%D
+x_Markov = zeros(1,N);
+x_NoMarkov = zeros(1,N);
+for i = 1:N
+   if(margp_xY(2,i) >= 0.5)
+       x_Markov(i) = 1;
+   else
+       x_Markov(i) = 0;
+   end
+   
+      if(y(i) >= 0.5)
+       x_NoMarkov(i) = 1;
+   else
+       x_NoMarkov(i) = 0;
+   end
+   
+end
+figure
+hold on
+plot(x_NoMarkov,'o')
+plot(x_Markov)
+legend("No Markov","Markov")
+
+
+
+
+
 

@@ -1,26 +1,34 @@
-function marginal_log_likelihood_N = forward_reqursion(p,sigma,y,N)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-prio_x = [0.5,0.5];
-P = [p 1-p; 1-p p]; % Markov transition matrix
+function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_reqursion(p,tau,y,N)
+%Calculates the posterior probability using forward recursion
+%   p,tau are scalars, y is a (1,N) vector
 
-like_yx = zeros(2,1);       % Likelihood
-                            % like_yx(x_i) = p(y_i|x_i)
-like_mean = [0;1];          % Mean of likelihood is x
-like_std = sigma;  
+x = [0;1];                  % x_i can either be 0 or 1
+                            % For every probability the first row is true
+                            % if x = 0, the second row if is true if x = 1
+prio_x = [0.5;0.5];
 
-prio_xY = zeros(2,N);       % Prior
+P = [  p  1-p; 
+     1-p    p];             % Markov transition matrix                            
+                            
+like_yx = zeros(2,N);       % Likelihood
+                            % like_yx(x,i) = p(y_i|x_i)
+
+like_yx(1,:) = normpdf(y, x(1), tau);
+like_yx(2,:) = normpdf(y, x(2), tau);
+
+prio_xY = zeros(2,N);       % Conditional Prior
                             % prio_xY(x,i) = p(x_i|y_1,...,y_{i-1})
-p_yY = zeros(1,N);          % Normalising constant
-                            % p_yY(i) = p(y_i|y_1,...,y_{i-1})
-p_Y_log = zeros(1,N);           % Marginal likelihood 
+p_yY = zeros(1,1);          % Normalising constant
+                            % p_yY = p(y_i|y_1,...,y_{i-1})
+p_Y_log = zeros(1,N);       % Marginal likelihood 
                             % p_Y(i) = p(y_1,...y_i)
 
 post_xY = zeros(2,N);       % Posteriori
                             % post_xY(x,i) = p(x_i|y_1,...,y_i)
-post_mean = zeros(2,N);
-post_std = zeros(2,N);
+%post_mean = zeros(2,N);
+%post_std = zeros(2,N);
 
+%%
 for i = 1:N
 
 % Predicion
@@ -31,23 +39,22 @@ for i = 1:N
     end
 
 % Filtering
-
-    like_yx =  [normpdf(y(i), like_mean(1), like_std);
-                normpdf(y(i), like_mean(2), like_std)];
-            
-    p_yY(i) = prio_xY(:,i)'*like_yx; % Matrix multiply to get sum for all x
-
-    post_mean(:,i) = prio_xY(:,i) .* like_mean ./ p_yY(i);
-    post_std(:,i)  = prio_xY(:,i) .* like_std ./ p_yY(i);
     
-    post_xY(:,i) = [normpdf(0, post_mean(1,i), post_std(1,i));
-                    normpdf(1, post_mean(2,i), post_std(2,i))];
+    
+%%
+    p_yY = prio_xY(:,i)'*like_yx(:,i);
+    
+    
+    post_xY(:,i) = prio_xY(:,i) .* like_yx(:,i) ./ p_yY;
+
+
     if (i == 1)
-        p_Y_log(i) = log(p_yY(i));
+        p_Y_log(i) = log(p_yY);
     else
-        p_Y_log(i) = log(p_yY(i)) + p_Y_log(i-1);
+        p_Y_log(i) = log(p_yY) + p_Y_log(i-1);
     end
 end
+
 marginal_log_likelihood_N = p_Y_log(N);
 
 end

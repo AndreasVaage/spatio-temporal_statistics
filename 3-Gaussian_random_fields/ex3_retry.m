@@ -48,7 +48,7 @@ figure(2);
 imagesc(Cov_true);
 title('\textbf{Matern Covariance Matrix}', 'Interpreter', 'latex', 'FontSize', 15);
 
-%% Task 2
+%% Task 2 - Max Likelihood estimation og sig2, alpha, eta, tau2
 
 N_steps = 25;
 
@@ -66,38 +66,40 @@ for i = 1:(N_steps -1)
     alpha_est(i) = (H'/Cov_est*H)\(H'/Cov_est*Y);
     Z = Y - H*alpha_est(i);
     
-    
     logLikelihood(i) = -0.5*log(det(Cov_est)) - 0.5*Z'*(Cov_est\Z);
+    
     
     
     [d_Cov_d_sig2, d_Cov_d_eta, d_Cov_d_tau2] = calc_d_Cov_d_theta(dataSites, theta_est(i,:));
     
     d_l_d_theta = zeros(3,1);
     
-     % dl/dsigma2
+     % d l / d sigma2
     d_l_d_theta(1) = -0.5*trace(Cov_est\d_Cov_d_sig2) + 0.5*Z'*(Cov_est\d_Cov_d_sig2)*(Cov_est\Z);
-    % dl/deta
+    % d l / d eta
     d_l_d_theta(2) = -0.5*trace(Cov_est\d_Cov_d_eta ) + 0.5*Z'*(Cov_est\d_Cov_d_eta )*(Cov_est\Z);
-    % dl/dtau2
+    % d l / d tau2
     d_l_d_theta(3) = -0.5*trace(Cov_est\d_Cov_d_tau2) + 0.5*Z'*(Cov_est\d_Cov_d_tau2)*(Cov_est\Z);
     
-    expHessian_est = zeros(3,3);
+    E_Hessian_est = zeros(3,3);
     
-    expHessian_est(1,1) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_sig2));
-    expHessian_est(1,2) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_eta ));
-    expHessian_est(1,3) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_tau2));
-    expHessian_est(2,2) = -trace((Cov_est\d_Cov_d_eta )*(Cov_est\d_Cov_d_eta ));
-    expHessian_est(2,3) = -trace((Cov_est\d_Cov_d_eta )*(Cov_est\d_Cov_d_tau2));
-    expHessian_est(3,3) = -trace((Cov_est\d_Cov_d_tau2)*(Cov_est\d_Cov_d_tau2));
+    E_Hessian_est(1,1) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_sig2));
+    E_Hessian_est(1,2) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_eta ));
+    E_Hessian_est(1,3) = -trace((Cov_est\d_Cov_d_sig2)*(Cov_est\d_Cov_d_tau2));
+    E_Hessian_est(2,2) = -trace((Cov_est\d_Cov_d_eta )*(Cov_est\d_Cov_d_eta ));
+    E_Hessian_est(2,3) = -trace((Cov_est\d_Cov_d_eta )*(Cov_est\d_Cov_d_tau2));
+    E_Hessian_est(3,3) = -trace((Cov_est\d_Cov_d_tau2)*(Cov_est\d_Cov_d_tau2));
     
-    expHessian_est(2,1) = expHessian_est(1,2);
-    expHessian_est(3,1) = expHessian_est(1,3);
-    expHessian_est(3,2) = expHessian_est(2,3);
+    E_Hessian_est(2,1) = E_Hessian_est(1,2);
+    E_Hessian_est(3,1) = E_Hessian_est(1,3);
+    E_Hessian_est(3,2) = E_Hessian_est(2,3);
 
 
-    theta_est(i+1,:) = theta_est(i,:) - (expHessian_est\d_l_d_theta)';
+    
+    theta_est(i+1,:) = theta_est(i,:) - (E_Hessian_est\d_l_d_theta)';
 end
 
+% This is Sigma
 Cov_est = CalcMaternCov(dataSites, theta_est(i+1,:));
     
 alpha_est(i+1) = (H'/Cov_est*H)\(H'/Cov_est*Y);
@@ -106,7 +108,7 @@ Z = Y - H*alpha_est(i+1);
 logLikelihood(i+1) = -0.5*log(det(Cov_est)) - 0.5*Z'*(Cov_est\Z);
 
 
-%% Task 3
+%% Task 3 - Solution 1
 
 gridX = 25;
 gridY = 25;
@@ -120,6 +122,22 @@ for i = 1:n
 
 end
 
+% This is Sigma_0
+Cov_pred = CalcMaternCov(predictionSites, theta_est(N_steps,:));
+
+Y_pred = -ones(n,1);
+Y_pred_var = -ones(n,1);
+
+for i = 1:n
+    [Y_pred(i), Y_pred_var(i)] = singlePointKrigingInterp(dataSites, predictionSites(i,:), theta_est(N_steps,:), Y);
+end
+
+Y_pred_matrix = reshape(Y_pred,[gridX, gridY]);
+Y_pred_var_matrix = reshape(Y_pred_var,[gridX, gridY]);
+
+%% Plotting
+
+
 figure(3);
 for i = 1:n
     plot(predictionSites(i,1), predictionSites(i,2), '.b'); hold on;
@@ -130,19 +148,7 @@ grid on; box on;
 title(['\textbf{' num2str(n) ' Grid-Regular Prediction Sites}'], 'Interpreter', 'latex', 'FontSize', 15);
 xlabel('East'); ylabel('North');
 
-Cov_pred = CalcMaternCov(predictionSites, theta_est(N_steps,:));
 
-%%
-
-Y_pred = -ones(n,1);
-Y_pred_var = -ones(n,1);
-
-for i = 1:n
-    [Y_pred(i), Y_pred_var(i)] = singlePointKrigingInterp(dataSites, predictionSites(i,:), theta_est(N_steps,:), Y);
-end
-%%
-Y_pred_matrix = reshape(Y_pred,[25,25]);
-Y_pred_var_matrix = reshape(Y_pred_var,[25,25]);
 figure(4);
 subplot(1,2,1);
 heatmap(Y_pred_matrix);
@@ -150,9 +156,68 @@ heatmap(Y_pred_matrix);
 subplot(1,2,2); hold off;
 imagesc(Y_pred_var_matrix'); hold on;
 for i = 1:m
-    plot(25*dataSites(i,1), 25*dataSites(i,2), '.r'); hold on;
+    plot(gridX*dataSites(i,1), gridY*dataSites(i,2), '.r'); hold on;
 end
 %heatmap(Y_pred_var_matrix); hold on;
+
+%% Task 3 - Solution 2
+
+Cov_joint = CalcJointMaternCov(dataSites, predictionSites, theta_est(N_steps,:));
+H_g = zeros(n,1);
+for i = 1:n
+    H_g(i) = predictionSites(i,1) + predictionSites(i,2) - 1;
+end
+
+predicted_mean = H_g*theta_est(N_steps,3) + Cov_joint*(Cov_est\(Y - H*theta_est(N_steps,3)));
+predicted_variance_mat = Cov_pred - Cov_joint*(Cov_est\(Cov_joint'));
+predicted_variance = diag(predicted_variance_mat);
+
+predicted_mean_matrix = reshape(predicted_mean, [gridX, gridY]);
+predicted_variance_matrix = reshape(predicted_variance, [gridX, gridY]);
+
+%% Plotting 2
+
+
+figure(5);
+subplot(1,3,1);
+heatmap(predicted_mean_matrix);
+
+subplot(1,3,2);
+imagesc(predicted_mean_matrix');
+
+subplot(1,3,3); hold off;
+imagesc(predicted_variance_matrix'); hold on;
+for i = 1:m
+    plot(gridX*dataSites(i,1), gridY*dataSites(i,2), '.r'); hold on;
+end
+
+%% Comapring method 1 and 2 - They are nearly identical
+figure(6);
+subplot(2,2,1);
+%heatmap(Y_pred_matrix);
+imagesc(Y_pred_matrix');
+
+subplot(2,2,2); hold off;
+imagesc(Y_pred_var_matrix'); hold on;
+for i = 1:m
+    plot(gridX*dataSites(i,1), gridY*dataSites(i,2), '.r'); hold on;
+end
+
+
+
+
+
+
+
+subplot(2,2,3);
+%heatmap(predicted_mean_matrix);
+imagesc(predicted_mean_matrix');
+
+subplot(2,2,4); hold off;
+imagesc(predicted_variance_matrix'); hold on;
+for i = 1:m
+    plot(gridX*dataSites(i,1), gridY*dataSites(i,2), '.r'); hold on;
+end
 
 %% Functions
 
@@ -173,7 +238,7 @@ end
 function [val, val_var] = singlePointKrigingInterp(siteCoords, predCoords, theta, data)
 
 cov = CalcMaternCov(siteCoords, theta);
-cov_pred = CalcJointMaternCov(siteCoords, predCoords, theta);
+cov_pred = CalcJointMaternCov(siteCoords, predCoords, theta)';
 
 
 val = (cov\cov_pred)'*data;
@@ -182,23 +247,24 @@ val_var = theta(3) - cov_pred'*(cov\cov_pred);
 
 end
 
-function Cov_pred = CalcJointMaternCov(siteCoords, predCoords, theta)
+function Cov_pred = CalcJointMaternCov(predCoords, siteCoords, theta)
 
-m = length(siteCoords);
+m = size(siteCoords);
+m = m(1);
+
 n = size(predCoords);
 n = n(1);
 
-Cov_pred = -1*ones(m,n); % covariance of all the prediction sites to the data sites
+Cov_pred = -1*ones(m,n);
 
-for i = 1:m
-    for j = 1:n
-        dist_ij = norm(siteCoords(i,:) - predCoords(j,:));
-        Cov_pred(i,j) = theta(1)*(1 + theta(2)*dist_ij) * exp(-theta(2)*dist_ij);
+for j = 1:n
+    for i = 1:m
+        dist_pi = norm(predCoords(j,:) - siteCoords(i,:));
+        Cov_pred(i,j) = theta(1)*(1 + theta(2)*dist_pi) * exp(-theta(2)*dist_pi);
     end
 end
 
 end
-
 
 function [d_Cov_d_sig2, d_Cov_d_eta, d_Cov_d_tau2] = calc_d_Cov_d_theta(siteCoords, theta_est)
 

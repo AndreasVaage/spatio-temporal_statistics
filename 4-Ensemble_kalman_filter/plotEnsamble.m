@@ -8,7 +8,7 @@ else % one ensamble is a row
     A = s(1);
 end
 
-figure(1);
+figure(1); hold off;
 for i = 1:A
     plot(ensamble(:, i), 1:100); hold on;
 end

@@ -2,6 +2,7 @@ clear; close all
 %% Generate ensamble
 
 B = 199;
+
 [ensamble, CovMat, L, MU] = genRealizations(B);
 plotEnsamble(2, ensamble);
 
@@ -63,10 +64,33 @@ for j = 49:-1:1
     plotEnsamble(n_f, ensamble_assimilate);
     pause(0.2)
 end
-%%
-figure(n_f+1)
-[yMean, yCIpercen] = CredInt(ensamble_assimilate',0.9);
-plot(yMean, 1:100,'k'); hold on;
-plot(yMean+yCIpercen,1:100,'--k')
+
+plotEnsamble(j, ensamble_assimilate);
+
+%% C - Kalman filter
+
+Sigma = CovMat;
+mu = MU;
+tau = 0.1;
+g = zeros(1,100);
+for j = 1:50
+    angleToReceiver = atan2(40, 50 + j);
+    g(1:50+j) = 1/cos(angleToReceiver);
+    g(50+j:100) = 0;
+    
+    K = Sigma*g'/(g*Sigma*g' + tau^2);
+    mu = mu + K*(travelTimeData(j) - g*mu);
+    Sigma = Sigma - K*g*Sigma;
+end
+
+figure
+std_80_percent = (sqrt(diag(Sigma)))*norminv(0.8);
+CI = [mu - std_80_percent, mu + std_80_percent];
+plot(mu, 1:100,'k'); hold on;
+plot(CI,1:100,'--k')
 ax = gca;
 ax.YDir = 'reverse';
+legend("Estimated Slowness"," $80 \%$ CI",'Location','northwest','interpreter', 'latex', 'FontSize', 15)
+xlabel("Slowness [ms/m]",'interpreter', 'latex', 'FontSize', 15)
+ylabel("Depth [m]",'interpreter', 'latex', 'FontSize', 15)
+

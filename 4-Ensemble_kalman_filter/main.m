@@ -1,8 +1,8 @@
-
+clear; close all
 %% Generate ensamble
 
 B = 199;
-[ensamble, CovMat, L, mean] = genRealizations(B);
+[ensamble, CovMat, L, MU] = genRealizations(B);
 plotEnsamble(2, ensamble);
 
 %% Forecast/Predict travel time
@@ -12,42 +12,29 @@ ensambleTravelTimes = forecastTravelTime(ensamble, B);
 
 %% Calc empirical covariances
 
-travelTimesMeans = -ones(50, 1);
-travelTimesVariances = -ones(50, 1);
-
-ensambleMeans = -ones(100, 1);
 ensambleTravelTimeCovariances = -ones(100, 50);
 
-for i = 1:50
-    travelTimesMeans(i) = sum(ensambleTravelTimes(i, :))/B;
-end
-for i = 1:50
-    travelTimesVariances(i) = sum((ensambleTravelTimes(i, :) - travelTimesMeans(i)).^2)/(B - 1);
-end
+travelTimesMeans = mean(ensambleTravelTimes,2);
+travelTimesVariances = var(ensambleTravelTimes,1,2);
 
+ensambleMeans = mean(ensamble,2);
 
-for i = 1:100
-    ensambleMeans(i) = sum(ensamble(i, :))/B;
-end
-
-
-for k = 1:100 % iterating through layers
-    
-    for j = 1:50 % iterating throung sensors
-        ensambleTravelTimeCovariances(k, j) = sum((ensamble(k, :) - ensambleMeans(k)).*(ensambleTravelTimes(j, :) - travelTimesMeans(j)))/(B - 1);
+for j = 1:50 % iterating throung sensors
+    for k = 1:100 
+         C = cov(ensamble(k,:),ensambleTravelTimes(j,:));                  % Covariance matrix
+         ensambleTravelTimeCovariances(k,j) = C(1,2);
     end
-    %ensambleVariances(i) = sum((ensamble(i, :) - ensambleMeans(i)).^2)/(B - 1);
 end
 
 %%
 
 figure(1); hold off;
-for i = 1:B
-    plot(1:50, ensambleTravelTimes(:,i)); hold on;
+for b = 1:B
+    plot(1:50, ensambleTravelTimes(:,b)); hold on;
 end
 plot(1:50, travelTimesMeans, 'b', 'LineWidth', 5);
-plot(1:50, travelTimesMeans + travelTimesVariances, 'b', 'LineWidth', 5);
-plot(1:50, travelTimesMeans - travelTimesVariances, 'b', 'LineWidth', 5);
+plot(1:50, travelTimesMeans + sqrt(travelTimesVariances), 'b', 'LineWidth', 5);
+plot(1:50, travelTimesMeans - sqrt(travelTimesVariances), 'b', 'LineWidth', 5);
 grid on;
 
 %% Assimilate data
@@ -55,17 +42,31 @@ grid on;
 ensamble_assimilate = ensamble;
 
 % Assimilate sensor j = 1
-j = 1;
-for i = 1:B
-    ensamble_assimilate(:, i) = ensamble(:, i) + ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j)*(travelTimeData(j) - ensambleTravelTimes(j,i));
+j = 50;
+K = ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j);       % Kalman gain for sensor j and realization i
+h =  findobj('type','figure');
+n_f = length(h)+1;
+figure(n_f);
+hold on
+for b = 1:B
+    ensamble_assimilate(:, b) = ensamble(:, b) + K *(travelTimeData(j) - ensambleTravelTimes(j,b));
 end
-plotEnsamble(3, ensamble_assimilate);
+plotEnsamble(n_f, ensamble_assimilate);
 
-% Assimilate the other sensors j = 1
-for j = 2:50
-    for i = 1:B
-        ensamble_assimilate(:, i) = ensamble_assimilate(:, i) + ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j)*(travelTimeData(j) - ensambleTravelTimes(j,i));
+% Assimilate the other sensors 
+for j = 49:-1:1
+    K = ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j);       % Kalman gain for sensor j and realization i
+    for b = 1:B
+        ensamble_assimilate(:, b) = ensamble_assimilate(:, b) + K *(travelTimeData(j) - ensambleTravelTimes(j,b));
     end
+    
+    plotEnsamble(n_f, ensamble_assimilate);
+    pause(0.2)
 end
-plotEnsamble(j, ensamble_assimilate);
-
+%%
+figure(n_f+1)
+[yMean, yCIpercen] = CredInt(ensamble_assimilate',0.9);
+plot(yMean, 1:100,'k'); hold on;
+plot(yMean+yCIpercen,1:100,'--k')
+ax = gca;
+ax.YDir = 'reverse';

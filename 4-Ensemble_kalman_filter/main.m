@@ -1,71 +1,79 @@
 clear; close all
-%% Generate ensamble
+
+%% A- Ensamble Kalman Filter Correct solution
 
 B = 199;
-
-[ensamble, CovMat, L, MU] = genRealizations(B);
-plotEnsamble(2, ensamble);
-
-%% Forecast/Predict travel time
-
+depth = 100;
+depths = 1:depth;
 load('travelTimeData');
-ensambleTravelTimes = forecastTravelTime(ensamble, B);
 
-%% Calc empirical covariances
+[slownessEnsamble, CovMat, L, MU] = genRealizations(B, depth);
+plotEnsamble(1, slownessEnsamble);
 
-ensambleTravelTimeCovariances = -ones(100, 50);
+% preallocate
+slownessTravelTimeCovariance = -ones(depth,1);
+slownessEnsamble_assimilate = slownessEnsamble;
 
-travelTimesMeans = mean(ensambleTravelTimes,2);
-travelTimesVariances = var(ensambleTravelTimes,1,2);
-
-ensambleMeans = mean(ensamble,2);
-
-for j = 1:50 % iterating throung sensors
-    for k = 1:100 
-         C = cov(ensamble(k,:),ensambleTravelTimes(j,:));                  % Covariance matrix
-         ensambleTravelTimeCovariances(k,j) = C(1,2);
+for j = 1:50 % iterate through sensors
+    
+    % forecast travel time for sensor j; 
+        % B different values, one for each ensamble
+    sensorTravelTimeEnsamble = forecastTravelTime(slownessEnsamble_assimilate, B, j);
+    
+    % calculate variance of travel time for sensor j
+    travelTimesVariance = var(sensorTravelTimeEnsamble);
+    
+    % calculate covariance of travel and with the slowness ensambles
+    for k = depths
+         C = cov(slownessEnsamble_assimilate(k,:), sensorTravelTimeEnsamble); % 2x2 Covariance matrix
+         slownessTravelTimeCovariance(k) = C(1,2);
     end
+    
+    % calc kalman gain and assimilate data into ensamble
+    K = slownessTravelTimeCovariance / travelTimesVariance;
+
+    for b = 1:B
+        slownessEnsamble_assimilate(:,b) = slownessEnsamble_assimilate(:,b) + K *(travelTimeData(j) - sensorTravelTimeEnsamble(b));
+    end
+    
+    if j == 25
+        slownessEnsamble_j_25 = slownessEnsamble_assimilate;
+    end
+
+    % plotEnsamble(2, slownessEnsamble_assimilate);
+    % pause(0.1);
+    
 end
 
 %%
 
-figure(1); hold off;
-for b = 1:B
-    plot(1:50, ensambleTravelTimes(:,b)); hold on;
-end
-plot(1:50, travelTimesMeans, 'b', 'LineWidth', 5);
-plot(1:50, travelTimesMeans + sqrt(travelTimesVariances), 'b', 'LineWidth', 5);
-plot(1:50, travelTimesMeans - sqrt(travelTimesVariances), 'b', 'LineWidth', 5);
-grid on;
+slownessMean_j_25 = mean(slownessEnsamble_j_25, 2);
+slownessVariance_j_25 = var(slownessEnsamble_j_25, 1, 2);
 
-%% Assimilate data
+slownessMean = mean(slownessEnsamble_assimilate, 2);
+slownessVariance = var(slownessEnsamble_assimilate, 1, 2);
 
-ensamble_assimilate = ensamble;
+std_90_j_25 = sqrt(slownessVariance_j_25)*norminv(0.9);
+CI_j_25 = [slownessMean_j_25 - std_90_j_25, slownessMean_j_25 + std_90_j_25];
 
-% Assimilate sensor j = 1
-j = 50;
-K = ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j);       % Kalman gain for sensor j and realization i
-h =  findobj('type','figure');
-n_f = length(h)+1;
-figure(n_f);
-hold on
-for b = 1:B
-    ensamble_assimilate(:, b) = ensamble(:, b) + K *(travelTimeData(j) - ensambleTravelTimes(j,b));
-end
-plotEnsamble(n_f, ensamble_assimilate);
+std_90 = sqrt(slownessVariance)*norminv(0.9);
+CI = [slownessMean - std_90, slownessMean + std_90];
 
-% Assimilate the other sensors 
-for j = 49:-1:1
-    K = ensambleTravelTimeCovariances(:, j)/travelTimesVariances(j);       % Kalman gain for sensor j and realization i
-    for b = 1:B
-        ensamble_assimilate(:, b) = ensamble_assimilate(:, b) + K *(travelTimeData(j) - ensambleTravelTimes(j,b));
-    end
-    
-    plotEnsamble(n_f, ensamble_assimilate);
-    pause(0.2)
-end
+figure(3); hold off;
+orange = [1, 0.5, 0]; blue = [0, 0.5, 1];
+a1 = plot(slownessMean_j_25, depths, 'Color', blue, 'DisplayName', 'Estimated Slowness after 25 samples'); hold on; grid on;
+a2 = plot(CI_j_25, 1:100, '--', 'Color', blue, 'DisplayName', '$90 \%$ CI');
 
-plotEnsamble(j, ensamble_assimilate);
+b1 = plot(slownessMean, depths, 'Color', orange, 'DisplayName', 'Estimated Slowness all Sensors'); hold on; grid on;
+b2 = plot(CI, 1:100, '--', 'Color', orange, 'DisplayName', '$90 \%$ CI');
+
+ax = gca;
+ax.YDir = 'reverse';
+legend([a1, a2(1), b1, b2(1)], 'Location', 'best', 'interpreter', 'latex', 'FontSize', 10);
+xlabel('Slowness [ms/m]', 'interpreter', 'latex', 'FontSize', 15);
+ylabel('Depth [m]', 'interpreter', 'latex', 'FontSize', 15);
+
+
 
 %% C - Kalman filter
 
@@ -83,14 +91,14 @@ for j = 1:50
     Sigma = Sigma - K*g*Sigma;
 end
 
-figure
+figure(4);
 std_80_percent = (sqrt(diag(Sigma)))*norminv(0.8);
 CI = [mu - std_80_percent, mu + std_80_percent];
 plot(mu, 1:100,'k'); hold on;
 plot(CI,1:100,'--k')
 ax = gca;
 ax.YDir = 'reverse';
-legend("Estimated Slowness"," $80 \%$ CI",'Location','northwest','interpreter', 'latex', 'FontSize', 15)
-xlabel("Slowness [ms/m]",'interpreter', 'latex', 'FontSize', 15)
-ylabel("Depth [m]",'interpreter', 'latex', 'FontSize', 15)
+legend("Estimated Slowness"," $80 \%$ CI",'Location','northwest','interpreter', 'latex', 'FontSize', 15);
+xlabel("Slowness [ms/m]",'interpreter', 'latex', 'FontSize', 15);
+ylabel("Depth [m]",'interpreter', 'latex', 'FontSize', 15);
 

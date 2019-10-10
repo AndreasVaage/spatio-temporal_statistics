@@ -1,4 +1,6 @@
-function [ensamble, CovMat, L, mean_] = genRealizations(B, layers)
+function [ensamble, CovMat, L, mean_] = genRealizations(B)
+
+layers = 100;
 
 ensamble = -ones(layers, B);
 

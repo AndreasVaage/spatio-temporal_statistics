@@ -1,6 +1,7 @@
-function [slownessEnsamble_assimilate, slownessEnsamble_j_25] = enKF(slownessEnsamble, travelTimeData)
-%ENKF Summary of this function goes here
-%   Detailed explanation goes here
+function [slownessEnsamble_assimilate, slownessEnsamble_j_25] = enKF(slownessEnsamble, travelTimeData, order)
+%ENKF function solves task (a)
+%   given an ensamble and data, filters the ensamble using the data to
+%   estimate parameters
 
 s = size(slownessEnsamble);
 depth = s(1);
@@ -10,7 +11,13 @@ B = s(2);
 slownessTravelTimeCovariance = -ones(depth,1);
 slownessEnsamble_assimilate = slownessEnsamble;
 
-for j = 1:50 % iterate through sensors
+if order == 1
+    sensors = 1:50;
+else
+    sensors = 50:-1:1;
+end
+
+for j = sensors % iterate through sensors
     
     % forecast travel time for sensor j; B times, one for each realization
     sensorTravelTimeEnsamble = forecastTravelTime(slownessEnsamble_assimilate, B, j);
@@ -30,7 +37,7 @@ for j = 1:50 % iterate through sensors
         slownessEnsamble_assimilate(:,b) = slownessEnsamble_assimilate(:,b) + K*(travelTimeData(j) - sensorTravelTimeEnsamble(b));
     end
     
-    if j == 25 % keeping track of the half-way result
+    if j == 25 % keeping track of the half-way/intermediate result
         slownessEnsamble_j_25 = slownessEnsamble_assimilate;
     end
     

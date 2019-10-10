@@ -1,4 +1,4 @@
-function [] = plotEnsamble(fig, ensamble)
+function [] = plotEnsamble(j, ensamble)
 
 s = size(ensamble);
 
@@ -8,15 +8,15 @@ else % one ensamble is a row
     A = s(1);
 end
 
-figure(fig); hold off;
+hold off;
 for i = 1:A
-    plot(ensamble(:, i), 1:100); hold on;
+    plot(ensamble(:, i), 1:100,'color',[0 0 0]+0.4); hold on;
 end
 ax = gca;
 ax.YDir = 'reverse';
 %gca.YDir = 'reverse'; % does not work
 grid on;
-title(['\textbf{Ensamble prior ' num2str(fig) '}'], 'interpreter', 'latex', 'FontSize', 18);
+title(['\textbf{Ensamble prior ' num2str(j) '}'], 'interpreter', 'latex', 'FontSize', 18);
 xlabel('Slowness', 'interpreter', 'latex', 'FontSize', 15);
 ylabel('Depth index', 'interpreter', 'latex', 'FontSize', 15);
 

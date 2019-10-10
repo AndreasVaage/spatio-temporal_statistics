@@ -25,5 +25,5 @@ p = [0.5*(1-percen) 0.5*(1+percen)];
 N = size(y,1);                                                             % Number of experiments in data set
 yMean = mean(y,1);                                                         % Mean of y for all experiments at each value of x
 ySEM = std(y)/sqrt(N);                                                     % Compute standard error of the mean of all experiments at each value of x
-CI95 = tinv(p, N-1);                                                       % Calculate 95% probability intervals of t-Distribution
-yCIpercen = bsxfun(@times, ySEM, CI95(:));                                 % Calculate 95% confidence intervals of all experiments at each value of ‘x’
+CIp = tinv(p, N-1);                                                        % Calculate p probability intervals of t-Distribution
+yCIpercen = bsxfun(@times, ySEM, CIp(:));                                  % Calculate p confidence intervals of all experiments at each value of ‘x’

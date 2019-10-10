@@ -2,7 +2,7 @@ clear; close all
 
 %% A- Ensamble Kalman Filter Correct solution
 
-B = 199;
+B = 200;
 depth = 100;
 depths = 1:depth;
 load('travelTimeData');
@@ -46,7 +46,6 @@ for j = 1:50 % iterate through sensors
 end
 
 %%
-
 slownessMean_j_25 = mean(slownessEnsamble_j_25, 2);
 slownessVariance_j_25 = var(slownessEnsamble_j_25, 1, 2);
 
@@ -59,13 +58,27 @@ CI_j_25 = [slownessMean_j_25 - std_90_j_25, slownessMean_j_25 + std_90_j_25];
 std_90 = sqrt(slownessVariance)*norminv(0.9);
 CI = [slownessMean - std_90, slownessMean + std_90];
 
-figure(3); hold off;
+%
+figure
+plotEnsamble(50, slownessEnsamble_assimilate);
+hold on
+[yMean, yCIpercen] = CredInt(slownessEnsamble_assimilate',0.95);
+p1 = plot(yMean, 1:100,'k','linewidth',2,'DisplayName','Mean ensabled slowness'); hold on;
+inBetween = [(yMean+yCIpercen(1,:)), fliplr((yMean+yCIpercen(2,:)))];
+fplt = fill(inBetween,[1:100,fliplr(1:100)], 'b');
+set(fplt,'facealpha',.2,'DisplayName','$95\%$ confidence of mean')
+ax = gca;
+ax.YDir = 'reverse';
 orange = [1, 0.5, 0]; blue = [0, 0.5, 1];
-a1 = plot(slownessMean_j_25, depths, 'Color', blue, 'DisplayName', 'Estimated Slowness after 25 samples'); hold on; grid on;
-a2 = plot(CI_j_25, 1:100, '--', 'Color', blue, 'DisplayName', '$90 \%$ CI');
+p2 = plot(CI, 1:100, '--k','linewidth',2, 'DisplayName', '$10\%$ and $90\%$ uncertainty bounds');
+legend([p1,fplt,p2(1)],'location','northwest', 'interpreter', 'latex', 'FontSize', 12)
+figure; 
+orange = [1, 0.5, 0]; blue = [0, 0.5, 1];
+a1 = plot(slownessMean_j_25, depths, 'Color', blue, 'DisplayName', 'Estimated Slowness after assimilating 25 sensors'); hold on; grid on;
+a2 = plot(CI_j_25, 1:100, '--', 'Color', blue, 'DisplayName', '$10\%$ and $90\%$ uncertainty bound');
 
 b1 = plot(slownessMean, depths, 'Color', orange, 'DisplayName', 'Estimated Slowness all Sensors'); hold on; grid on;
-b2 = plot(CI, 1:100, '--', 'Color', orange, 'DisplayName', '$90 \%$ CI');
+b2 = plot(CI, 1:100, '--', 'Color', orange, 'DisplayName', '$10\%$ and $90\%$ uncertainty bound');
 
 ax = gca;
 ax.YDir = 'reverse';
@@ -91,14 +104,14 @@ for j = 1:50
     Sigma = Sigma - K*g*Sigma;
 end
 
-figure(4);
+figure;
 std_80_percent = (sqrt(diag(Sigma)))*norminv(0.8);
 CI = [mu - std_80_percent, mu + std_80_percent];
 plot(mu, 1:100,'k'); hold on;
 plot(CI,1:100,'--k')
 ax = gca;
 ax.YDir = 'reverse';
-legend("Estimated Slowness"," $80 \%$ CI",'Location','northwest','interpreter', 'latex', 'FontSize', 15);
+legend("Estimated Slowness"," $10\%$ and $90\%$ uncertainty bounds",'Location','northwest','interpreter', 'latex', 'FontSize', 15);
 xlabel("Slowness [ms/m]",'interpreter', 'latex', 'FontSize', 15);
 ylabel("Depth [m]",'interpreter', 'latex', 'FontSize', 15);
 

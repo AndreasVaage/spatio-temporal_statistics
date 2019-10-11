@@ -143,6 +143,106 @@ xlabel("Slowness [ms/m]",'interpreter', 'latex', 'FontSize', 15);
 ylabel("Depth [m]",'interpreter', 'latex', 'FontSize', 15);
 
 
+function [slownessEnsamble_assimilate, slownessEnsamble_j_25] = enKF(slownessEnsamble, travelTimeData, order)
+%ENKF function solves task (a)
+%   given an ensamble and data, filters the ensamble using the data to
+%   estimate parameters
 
+s = size(slownessEnsamble);
+depth = s(1);
+B = s(2);
+
+% preallocate
+slownessTravelTimeCovariance = -ones(depth,1);
+slownessEnsamble_assimilate = slownessEnsamble;
+
+if order == 1
+    sensors = 1:50;
+else
+    sensors = 50:-1:1;
+end
+
+for j = sensors % iterate through sensors
+    
+    % forecast travel time for sensor j; B times, one for each realization
+    sensorTravelTimeEnsamble = forecastTravelTime(slownessEnsamble_assimilate, B, j);
+    
+    % calculate the travel time variance for sensor j
+    travelTimesVariance = var(sensorTravelTimeEnsamble);
+    
+    % calculate covariance of travel with the slowness ensamble
+    for k = 1:depth
+         C = cov(slownessEnsamble_assimilate(k,:), sensorTravelTimeEnsamble); % 2x2 Covariance matrix
+         slownessTravelTimeCovariance(k) = C(1,2);
+    end
+    
+    % calc kalman gain and assimilate data into ensamble
+    K = slownessTravelTimeCovariance / travelTimesVariance;
+    for b = 1:B
+        slownessEnsamble_assimilate(:,b) = slownessEnsamble_assimilate(:,b) + K*(travelTimeData(j) - sensorTravelTimeEnsamble(b));
+    end
+    
+    if j == 25 % keeping track of the half-way/intermediate result
+        slownessEnsamble_j_25 = slownessEnsamble_assimilate;
+    end
+    
+end
+
+end
+
+function travelTimes  = forecastTravelTime(ensamble, B, sensors)
+
+m = length(sensors);
+travelTimes = -ones(m, B);
+tau = 0.1;
+
+% iterate throung ensambles
+for i = 1:B
+    
+    % iterate through the given receivers/sensors
+    for j = 1:m
+    
+        % add up all slownesses down to depth of receiver j, of ensamble i
+        sumSlowness = sum(ensamble(1:50 + sensors(j),i));
+        
+        angleToReceiver = atan2(40, 50 + sensors(j));
+        noise = tau*randn(1);
+        
+        % travel time to receiver j, of ensamble i
+        travelTimes(j, i) = sumSlowness/cos(angleToReceiver) + noise;
+    end    
+    
+end
+
+end
+
+function [ensamble, CovMat, L, mean_] = genRealizations(B)
+
+layers = 100;
+
+ensamble = -ones(layers, B);
+
+CovMat = -ones(layers, layers);
+
+sigma = 0.05;
+mean_ = 0.5 - 0.001*(1:layers)';
+eta = 0.1;
+
+for i = 1:layers
+    for j = 1:layers
+        
+        CovMat(i, j) = sigma^2 * (1 + eta*abs(i - j))*exp(-eta*abs(i - j));
+        
+    end
+end
+
+L = chol(CovMat)';
+
+for i = 1:B
+    ensamble(:, i) = mean_ + L*randn(layers, 1);
+end
+
+
+end
 
 

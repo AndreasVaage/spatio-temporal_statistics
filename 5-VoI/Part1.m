@@ -21,5 +21,13 @@ ylabel('$\sigma$ ')
 zlabel('$PoV$')
 myeplot
 %%
+sigma_plt2 = [0.1,1,2];
+mu_plt2 = -2:0.01:2;
 figure
-plot(mu_plt,PoV(mu_plt,0.1)-max(0,mu_plt));
+hold on
+for j = 1:length(sigma_plt2)
+plot(mu_plt2,PoV(mu_plt2,sigma_plt2(j))-max(0,mu_plt2),'color',[0 0 0]+(j-1)*0.3,'DisplayName',strcat('$\sigma=',num2str(sigma_plt2(j)),'$'));
+legend('interpreter','latex')
+xlabel('$\mu$')
+ylabel('VoI')
+end

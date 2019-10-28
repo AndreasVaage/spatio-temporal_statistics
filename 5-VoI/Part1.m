@@ -32,6 +32,7 @@ legend('interpreter','latex')
 xlabel('$\mu$')
 ylabel('VoI')
 end
+myeplot
 %
 subplot(1,2,2)
 hold on
@@ -44,3 +45,4 @@ legend('interpreter','latex')
 xlabel('$\sigma$')
 ylabel('VoI')
 end
+myeplot

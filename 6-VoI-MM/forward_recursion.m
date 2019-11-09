@@ -1,20 +1,25 @@
-function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_reqursion(p,tau,y,N)
+function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_recursion(p,tau,y,N)
 %Calculates the posterior probability using forward recursion
 %   p,tau are scalars, y is a (1,N) vector
 
 x = [0;1];                  % x_i can either be 0 or 1
                             % For every probability the first row is true
                             % if x = 0, the second row if is true if x = 1
-prio_x = [0.5;0.5];
+prio_x = [0.99;0.01];
 
-P = [  p  1-p; 
-     1-p    p];             % Markov transition matrix                            
+P = [  p  1-p;
+       0    1]';             % Markov transition matrix                            
                             
 like_yx = zeros(2,N);       % Likelihood
                             % like_yx(x,i) = p(y_i|x_i)
 
-like_yx(1,:) = normpdf(y, x(1), tau);
-like_yx(2,:) = normpdf(y, x(2), tau);
+like_yx(1,:) = normpdf(y, x(1), 100*tau);
+like_yx(2,:) = normpdf(y, x(2), 100*tau);
+
+like_yx(1,20) = normpdf(y(20), x(1), tau);
+like_yx(2,20) = normpdf(y(20), x(2), tau);
+like_yx(1,30) = normpdf(y(30), x(1), tau);
+like_yx(2,30) = normpdf(y(30), x(2), tau);
 
 prio_xY = zeros(2,N);       % Conditional Prior
                             % prio_xY(x,i) = p(x_i|y_1,...,y_{i-1})
@@ -56,8 +61,9 @@ for i = 1:N
 end
 
 marginal_log_likelihood_N = p_Y_log(N);
-size(prio_xY)
-size(post_xY)
+
+% size(prio_xY)
+% size(post_xY)
 
 end
 

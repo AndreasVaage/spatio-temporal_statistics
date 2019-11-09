@@ -1,4 +1,4 @@
-function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_recursion_d(p,tau,y,N,i)
+function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_recursion_f(p,tau,y,N)
 %Calculates the posterior probability using forward recursion
 %   p,tau are scalars, y is a (1,N) vector
 
@@ -13,11 +13,8 @@ P = [  p  1-p;
 like_yx = zeros(2,N);       % Likelihood
                             % like_yx(x,i) = p(y_i|x_i)
 
-like_yx(1,:) = normpdf(y, x(1), 100*tau);
-like_yx(2,:) = normpdf(y, x(2), 100*tau);
-
-like_yx(1,i) = normpdf(y(i), x(1), tau);
-like_yx(2,i) = normpdf(y(i), x(2), tau);
+like_yx(1,:) = normpdf(y, x(1), tau);
+like_yx(2,:) = normpdf(y, x(2), tau);
 
 prio_xY = zeros(2,N);       % Conditional Prior
                             % prio_xY(x,i) = p(x_i|y_1,...,y_{i-1})

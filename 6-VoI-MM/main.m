@@ -1,6 +1,13 @@
 close all
 clear
 
+directory_a = 'plots/a/';
+directory_b = 'plots/b/';
+directory_c = 'plots/c/';
+directory_d = 'plots/d/';
+directory_e = 'plots/e/';
+directory_f = 'plots/f/';
+
 %% task a
 data = 50;
 marg_p = zeros(data,1);
@@ -15,6 +22,8 @@ plot(1:data,marg_p)
 grid
 xlabel('locations')
 ylabel('marg prob')
+title_pic = 'marg_prob';
+save_plots(title_pic,directory_a,fig1);
 
 %% task c
 tau = 0.3;
@@ -53,8 +62,9 @@ fig3 = figure;
 plot(1:data,margp_xY(2,:));
 grid
 xlabel('locations')
-ylabel('posterior prob for x_i = 1') 
-% Why this is that shitty??
+ylabel('posterior prob for x_i = 1')
+title_pic = 'post_prob';
+save_plots(title_pic,directory_c,fig3);
 
 %% task d
 PoV = [];
@@ -81,7 +91,9 @@ VoI = PoV - PV
 % plot(1:data,VoI)
 % grid
 % xlabel('locations')
-% ylabel('VoI') 
+% ylabel('VoI')
+%title_pic = 'VoI';
+%save_plots(title_pic,directory_d,fig4);
 
 
 %% task e
@@ -142,6 +154,7 @@ maximum = max(max(big_voi));
 % plot matrix.
 % plot diagonal: 2 sensors in same loc.
 % plot 20,30
+% save plots in directory_e.
 
 %% task f
 PoV_f = zeros(mc_samples,1);
@@ -176,7 +189,7 @@ end
 VoI_f = PoV_f - PV;
 
 % plot some of the new VoI: should we clean the road upfront or not?
-
+% save plots in directory_f.
 
 
 

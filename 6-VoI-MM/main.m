@@ -88,16 +88,67 @@ for k=1:N
     PoV(k) = mean_PoV;
 end
 VoI_mc = PoV - PV;
-    
+
+%% Numerical integration
+% Much faster and more accurate than MC, but currently 10 to low values
+
+%p(y_k | x_k = x) ~ N(x,tau); N(mean, standard_deviation)
+%p(y_k) = sum_{x in {0,1}} ( p(y_k | x_k = x)*p(x_k = x) )
+%p(y_k) ~ N(0, tau)*p(x_k=0) + N(1, tau)*p(x_k=1)   where p(x_k) >= 0
+%p(y_k) ~ N(0, tau*p(x_k=0)) + N(p(x_k=1), tau*p(x_k=1))
+%p(y_k) ~ N(p(x_k=1),sqrt((tau*p(x_k=0))^2 + (tau*p(x_k=1))^2))
+%p(y_k) ~ N(p(x_k=1),tau*sqrt(p(x_k=0)^2 + p(x_k=1)^2))
+
+Nsamples = 101;
+spread = 4; %standard devitaions 
+mu = p_x(2,:)';
+std = tau*sqrt(sum(p_x.^2,1))';
+step_size = 2*spread*std/(Nsamples-1);
+Ysamples = zeros(N,Nsamples);
+for k = 1:N
+    Ysamples(k,:) = (mu(k)-2*spread*std(k):step_size(k):mu(k)) + spread*std(k);
+end
+% discretized pdf: dpdf_y(k,i) = p(y_k = Ysamples(k,i))
+dpdf_y = normpdf(Ysamples, mu , std);
+
+figure
+hold on
+plot(Ysamples(1,:),dpdf_y(1,:),'*')
+plot(Ysamples(N,:),dpdf_y(N,:),'*')
+legend("p(y_1)","p(y_N)")
+
+PoV = -ones(N,1);
+for k = 1:k
+    PoV_ni = 0;
+    for i = 1:Nsamples
+        y = normrnd(x,tau,N,1); % mean = x
+        v_tau = 100*tau*ones(size(y));
+        v_tau(k) = tau;
+        y(k) = Ysamples(k,i);
+        [~,prio_xY,post_xY] = forward_recursion(P, p_x(:,1),v_tau,y,N);
+        total_post_xY = backward_recursion(P,prio_xY,post_xY,N);
+        value_dont_clean = -5000*sum(total_post_xY(2,:));
+        integrand_PoV = max(value_clean_all,value_dont_clean)*dpdf_y(k,i);
+        PoV_ni = PoV_ni + integrand_PoV * step_size(k);
+    end
+    PoV(k) = PoV_ni;
+end
+VoI_ni = PoV - PV;    
+figure
+plot(VoI_ni)
+xlabel('locations')
+ylabel('VoI')
+legend("Numerical integration")
 fig4 = figure;
 hold on
 plot(1:N,VoI_mc)
+plot(VoI_ni)
+legend("Monte carlo","Numerical integration")
 grid
 xlabel('locations')
 ylabel('VoI')
 title_pic = 'VoI';
 %save_plots(title_pic,directory_d,fig4);
-
 
 %% task e
 big_pov = zeros(N,N);

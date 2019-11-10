@@ -1,25 +1,44 @@
-function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_recursion(p,tau,y,N)
+function [marginal_log_likelihood_N, prio_xY, post_xY] = forward_recursion(P,prio_x1,tau,y,N)
 %Calculates the posterior probability using forward recursion
-%   p,tau are scalars, y is a (1,N) vector
+%   Input:
+%   Markov transition matrix
+%   P = [ p(x_{i+1} = 0 | x_i = 0), p(x_{i+1} = 0 | x_i = 1)
+%         p(x_{i+1} = 1 | x_i = 0), p(x_{i+1} = 1 | x_i = 1)]
+%
+%   Prior x_1: prio_x1 2x1 matrix
+%   prio_x1(x+1) = p(x_1 = x)                   x = 0 or 1
+%
+%   Measurments: y 1xN vector
+%   Unbiased conditional independetn meausurments with
+%   Measurment standard deviation: tau 1xN vector or scalar
+%   If tau is a scalar then it is assumend all measurments have the same
+%   standard deviation
+%   y(i) ~ N(x(i),tau(i)^2), i = 1:N
+%
+%   Output:
+%   Marginal log likelihood
+%   log(p(y_1, ..., y_n))   Probability of getting those exact measurments
+%
+%   Conditional Prior: Prio_xY 2xN matrix
+%   prio_xY(x+1,i) = p(x_i = x|y_1,...,y_{i-1}) x = 0 or 1
+%
+%   Posteriori: Post_xY 2xN matrix
+%   post_xY(x+1,i) = p(x_i = x|y_1,...,y_i)     x = 0 or 1
+
 
 x = [0;1];                  % x_i can either be 0 or 1
                             % For every probability the first row is true
                             % if x = 0, the second row if is true if x = 1
-prio_x = [0.99;0.01];
-
-P = [  p  1-p;
-       0    1]';             % Markov transition matrix                            
                             
 like_yx = zeros(2,N);       % Likelihood
                             % like_yx(x,i) = p(y_i|x_i)
 
-like_yx(1,:) = normpdf(y, x(1), 100*tau);
-like_yx(2,:) = normpdf(y, x(2), 100*tau);
-
-like_yx(1,20) = normpdf(y(20), x(1), tau);
-like_yx(2,20) = normpdf(y(20), x(2), tau);
-like_yx(1,30) = normpdf(y(30), x(1), tau);
-like_yx(2,30) = normpdf(y(30), x(2), tau);
+assert( isequal(size(tau),size(y)) || isequal(size(tau),[1,1]),...
+    "tau has to be same size as y or a scalar")
+ 
+like_yx(1,:) = normpdf(y, x(1,:), tau);
+like_yx(2,:) = normpdf(y, x(2,:), tau);
+                         
 
 prio_xY = zeros(2,N);       % Conditional Prior
                             % prio_xY(x,i) = p(x_i|y_1,...,y_{i-1})
@@ -38,7 +57,7 @@ for i = 1:N
 
 % Predicion
     if (i == 1)
-        prio_xY(:,i) = prio_x;
+        prio_xY(:,i) = prio_x1;
     else
         prio_xY(:,i) = P*post_xY(:,i-1);
     end

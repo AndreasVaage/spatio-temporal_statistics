@@ -7,6 +7,9 @@ close all
 N = 250;
 x_Markov = ones(N,1)*-1;
 r = rand(N,1);
+prio_x1 = [0.5;0.5];
+p = 0.9;
+P = [p, 1-p; 1-p, p];
 
 if r(1) < 0.5
     x_Markov(1) = 1;
@@ -54,17 +57,16 @@ axis([0 250 -0.5 1.5]);
 %% B) - Forward recursion
 
 
-tau = [0.15:0.01:2];
-p = [0.2:0.01:0.99];
+tau = 0.15:0.01:2;
+p = 0.2:0.01:0.99;
 
 Z = zeros(length(p),length(tau));
 
 
 for r = 1:length(p)
     for c = 1:length(tau)
-        
-        Z(r,c) = forward_reqursion( p(r), tau(c), y, N );
-    
+        P = [p(r), 1-p(r); 1-p(r), p(r)];
+        Z(r,c) = forward_recursion(P,prio_x1, tau(c), y, N );
     end
 end
 
@@ -84,9 +86,9 @@ ylabel("$p$",'interpreter', 'latex', 'FontSize', 15)
 zlabel("$\mathrm{log} \,\, p_{\theta}(\mathbf{y})$",'interpreter', 'latex', 'FontSize', 15);
 
 %% C - Backward Recursion
-
-[~,prio_xY,post_xY] = forward_reqursion(0.9,0.4,y,N);
-margp_xY = backward_recursion(0.9,prio_xY,post_xY,N);
+P = [p(r), 1-p(r); 1-p(r), p(r)];
+[~,prio_xY,post_xY] = forward_recursion(P,prio_x1,tau(c),y,N);
+margp_xY = backward_recursion(P,prio_xY,post_xY,N);
 
 figure
 hold on

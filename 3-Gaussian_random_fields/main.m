@@ -54,7 +54,7 @@ N_steps = 25;
 
 theta_est = zeros(N_steps, 3);
 %theta_est(1,:) = [3;5;0.001];  % Initial guess
-theta_est(1,:) = [20;20;0.001];  % Initial guess
+theta_est(1,:) = [20;20;1];  % Initial guess
 alpha_est = zeros(N_steps,1);
 logLikelihood = zeros(N_steps,1);
 
@@ -107,7 +107,7 @@ Z = Y - H*alpha_est(i+1);
 
 logLikelihood(i+1) = -0.5*log(det(Cov_est)) - 0.5*Z'*(Cov_est\Z);
 
-
+plotting_task2(theta_est', alpha_est, logLikelihood, alpha_true, theta_true');
 %% Task 3 - Solution 1
 
 gridX = 25;
@@ -138,7 +138,7 @@ Y_pred_var_matrix = reshape(Y_pred_var,[gridX, gridY]);
 %% Plotting
 
 
-figure(3);
+figure(4);
 for i = 1:n
     plot(predictionSites(i,1), predictionSites(i,2), '.b'); hold on;
     %text(siteCoords(i,1), siteCoords(i,2), [' ' num2str(Y(i))]);
@@ -149,7 +149,7 @@ title(['\textbf{' num2str(n) ' Grid-Regular Prediction Sites}'], 'Interpreter', 
 xlabel('East'); ylabel('North');
 
 
-figure(4);
+figure(5);
 subplot(1,2,1);
 heatmap(Y_pred_matrix);
 
@@ -178,7 +178,7 @@ predicted_variance_matrix = reshape(predicted_variance, [gridX, gridY]);
 %% Plotting 2
 
 
-figure(5);
+figure(6);
 subplot(1,3,1);
 heatmap(predicted_mean_matrix);
 
@@ -192,7 +192,7 @@ for i = 1:m
 end
 
 %% Comapring method 1 and 2 - They are nearly identical
-figure(6);
+figure(7);
 subplot(2,2,1);
 %heatmap(Y_pred_matrix);
 imagesc(Y_pred_matrix');
